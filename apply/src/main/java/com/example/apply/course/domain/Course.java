@@ -35,14 +35,18 @@ public class Course {
         this.startDate = startDate;
     }
 
-    public static Course of(long id, String title){
+    public static Course of(long id, String title, long totalCount){
         return Course.builder()
                      .id(id)
                      .title(title)
+                     .totalCount(totalCount)
                      .build();
     }
 
-    public void increaseTotalCount() {
+    public synchronized void increaseTotalCount() {
+        if (this.totalCount >= 30) {
+            throw new IllegalStateException("Course exceeded limitation");
+        }
         this.totalCount++;
     }
 }
