@@ -1,6 +1,7 @@
 package com.example.apply.course.service;
 
 import com.example.apply.course.domain.Course;
+import com.example.apply.course.domain.CourseRegistration;
 import com.example.apply.course.repository.CourseRegistrationRepository;
 import com.example.apply.course.repository.CourseRepository;
 import com.example.apply.member.domain.Member;
@@ -84,6 +85,55 @@ public class CourseServiceConcurrencyTest {
 
             assertEquals(30, successCount.get());
             assertEquals(30, course.getTotalCount());
+        }
+    }
+
+    @Nested
+    @DisplayName("멤버 한 명이 같은 특강을 여러 번 신청할때")
+    class 멤버_한_명이_같은_특강을_여러_번_신청할때 {
+
+        @Test
+        void 같은_특강을_5번_신청하면_1번만_성공한다() throws InterruptedException {
+
+            int requestCount = 5;
+            ExecutorService executorService = Executors.newFixedThreadPool(10);
+
+            Member member = Member.of(1L, "Tom Cruise");
+            Course course = Course.of(1L, "Java 101", 0);
+            CourseRegistration courseRegistration = CourseRegistration.of(member, course);
+            given(memberRepository.findById(1L)).willReturn(Optional.of(member));
+            given(courseRepository.findByIdWithLock(1L)).willReturn(Optional.of(course));
+
+            AtomicInteger counter = new AtomicInteger(0);
+            given(courseRegistrationRepository.findCourseRegistrationByMemberIdAndCourseId(1L, 1L)).willAnswer(invocation -> {
+                if (counter.getAndIncrement() == 0) {
+                    return Optional.empty(); // 첫 번째 요청에 대해 Optional.empty() 반환
+                } else {
+                    return Optional.of(courseRegistration); // 이후 요청에 대해 CourseRegistration 반환
+                }
+            });
+
+            CountDownLatch latch = new CountDownLatch(requestCount);
+            AtomicInteger successCount = new AtomicInteger(0);
+
+            for(int i = 0; i < requestCount; i++) {
+                executorService.submit(() -> {
+                    try{
+                        courseService.applyCourse(1L, 1L);
+                        successCount.incrementAndGet();
+                    }catch (Exception e) {
+                        throw new RuntimeException(e);
+                    }finally{
+                        latch.countDown();
+                    }
+                });
+            }
+
+            latch.await();
+            executorService.shutdown();
+
+            assertEquals(1, successCount.get());
+            assertEquals(1, course.getTotalCount());
         }
     }
 }
