@@ -18,8 +18,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
-import static java.util.stream.Collectors.toList;
-
 @Service
 public class CourseService {
 
@@ -43,8 +41,8 @@ public class CourseService {
         Member member = memberRepository.findById(memberId)
                                         .orElseThrow(() -> new Exception("Member Not Found"));
 
-        Course course = courseRepository.findById(courseId)
-                                        .orElseThrow(() -> new Exception("Member Not Found"));
+        Course course = courseRepository.findByIdWithLock(courseId)
+                                        .orElseThrow(() -> new Exception("Course Not Found"));
 
         course.increaseTotalCount();
 
