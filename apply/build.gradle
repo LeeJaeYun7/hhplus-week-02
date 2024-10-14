@@ -30,8 +30,15 @@ dependencies {
 	annotationProcessor 'org.projectlombok:lombok'
 	testImplementation 'org.springframework.boot:spring-boot-starter-test'
 	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+
+	// MySQL JDBC 드라이버 추가
+	implementation group: 'com.mysql', name: 'mysql-connector-j', version: '8.0.33'
 }
 
 tasks.named('test') {
 	useJUnitPlatform()
+}
+
+tasks.withType(JavaExec) {
+	jvmArgs '-Xms512m', '-Xmx1024m'
 }
